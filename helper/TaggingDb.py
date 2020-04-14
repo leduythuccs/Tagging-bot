@@ -37,7 +37,7 @@ class TaggingDbConn:
             'id             INTEGER,'
             'problem_link   TEXT,'
             'code_link      TEXT,'
-            'diff           REAL'
+            'diff           TEXT'
             ')'
         )
 
@@ -59,7 +59,7 @@ class TaggingDbConn:
             'VALUES (?)'
         )
         cur.execute(query, (tag, ))
-        # self.conn.commit()
+        self.conn.commit()
         return cur.lastrowid
 
     def get_similar_tag(self, tag):
@@ -71,6 +71,7 @@ class TaggingDbConn:
         # if there are many tag_names with the same LCS, 
         # sort them by length (shorter is better)
         similar.sort(reverse=True)
+        similar = list(map(lambda x: (x[0], x[2]), similar))
         return similar
         
     def get_tag_id(self, tag):
@@ -101,7 +102,7 @@ class TaggingDbConn:
         )
 
         self.conn.execute(query, (id, problem_link, code_link, diff))
-        # self.conn.commit()
+        self.conn.commit()
     
     #for local debug
     def get_data(self, table, limit = 10):

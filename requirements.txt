@@ -2,7 +2,3 @@ requests
 python-dotenv
 discord
 asyncio
-beautifulsoup4
-pytz
-seaborn
-matplotlib
