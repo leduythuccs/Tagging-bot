@@ -129,7 +129,6 @@ class TaggingDbConn:
         # if there are many tag_names with the same LCS, 
         # sort them by length (shorter is better)
         similar.sort(reverse=True)
-        similar = list(map(lambda x: (x[0], x[2]), similar))
         return similar
         
     def get_tag_id(self, tag):
