@@ -13,6 +13,7 @@ bot = commands.Bot(command_prefix=';tag ')
 print(bot.command_prefix)
 bot.load_extension("cogs.BotControl")
 bot.load_extension("cogs.Tag")
+bot.load_extension("cogs.Handle")
 def no_dm_check(ctx):
     if ctx.guild is None:
         raise commands.NoPrivateMessage('Private messages not permitted.')

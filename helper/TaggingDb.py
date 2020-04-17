@@ -7,6 +7,12 @@ def normalize_tag(tag):
     while (tag.find('  ') != -1):
         tag = tag.replace('  ', ' ')
     tag = tag.lower()
+    if tag == "treap" or tag == "splay":
+        tag = "treap/splay"
+    if tag == "fft" or tag == "ntt":
+        tag = "fft/ntt"
+    if tag == "dfs" or tag == "bfs":
+        tag = "dfs/bfs"
     return tag
 def LCS(a: str, b: str):
     m = len(a)
@@ -34,10 +40,21 @@ class TaggingDbConn:
 
         self.conn.execute(
             'CREATE TABLE IF NOT EXISTS tagged ('
-            'id             INTEGER,'
-            'problem_link   TEXT,'
-            'code_link      TEXT,'
-            'diff           TEXT'
+            'problem    TEXT,'
+            'tag        TEXT'
+            ')'
+        )
+        self.conn.execute(
+            'CREATE TABLE IF NOT EXISTS commented ('
+            'problem    TEXT,'
+            'comment    TEXT'
+            ')'
+        )
+        self.conn.execute(
+            'CREATE TABLE IF NOT EXISTS user ('
+            'discord_id         TEXT,'
+            'handle             TEXT,'
+            'current_problem    TEXT'
             ')'
         )
 
@@ -50,7 +67,48 @@ class TaggingDbConn:
         res = self.conn.execute(query, (value, )).fetchone()
         return res is not None
 
-
+    def add_handle(self, discord_id, handle):
+        if self.check_exists('user', 'discord_id', discord_id):
+            query = (
+                'UPDATE user '
+                'SET handle = ? '
+                'WHERE discord_id = ?'
+            )
+        else:
+            query = (
+                'INSERT INTO user (handle, discord_id) '
+                'VALUES (?, ?)'
+            )
+        self.conn.execute(query, (handle, discord_id))
+        self.conn.commit()
+    def get_handle(self, discord_id):
+        query = (
+            'SELECT handle '
+            'FROM user '
+            'WHERE discord_id = ?'
+        )
+        res = self.conn.execute(query, (discord_id, )).fetchone()
+        if res is None or res[0] is None:
+            return None
+        return res[0]
+    def get_current_problem(self, discord_id):
+        query = (
+            'SELECT current_problem '
+            'FROM user '
+            'WHERE discord_id = ?'
+        )
+        res = self.conn.execute(query, (discord_id, )).fetchone()
+        if res is None or res[0] is None:
+            return None
+        return res[0]
+    def set_current_problem(self, discord_id, problem):
+        query = (
+            'UPDATE user '
+            'SET current_problem = ? '
+            'WHERE discord_id = ?'
+        )
+        self.conn.execute(query, (problem, discord_id)).fetchone()
+        self.conn.commit()
     def add_tag(self, tag):
         assert self.check_exists('tag_info', 'tag', tag) == False, f"Tag {tag} đã tồn tại"
         cur = self.conn.cursor()
@@ -66,7 +124,7 @@ class TaggingDbConn:
         tag_table = self.get_data('tag_info', limit=None)
         similar = []
         for id, tag_name in tag_table:
-            similar.append((LCS(tag, tag_name), -len(tag_name), tag_name))
+            similar.append((LCS(tag, tag_name) / max(len(tag_name), len(tag)) , tag_name))
         # sort by LCS
         # if there are many tag_names with the same LCS, 
         # sort them by length (shorter is better)
@@ -82,28 +140,45 @@ class TaggingDbConn:
         )
         res = self.conn.execute(query, (tag, )).fetchone()
         return res[0] if res is not None else None
+
     def get_tagged(self, tag):
         id = self.get_tag_id(tag)
         assert tag is not None
         query = (
-            'SELECT problem_link, code_link, diff '
+            'SELECT problem '
             'FROM tagged '
-            'WHERE id = ?'
+            'WHERE tag = ?'
         )
-        return self.conn.execute(query, (id, )).fetchall()
+        return self.conn.execute(query, (tag, )).fetchall()
 
-    def tagging(self, tag, problem_link, code_link, diff):
+    def tagging(self, problem, tag):
         id = self.get_tag_id(tag)
         assert tag is not None
 
         query = (
-            'INSERT INTO tagged (id, problem_link, code_link, diff) '
-            'VALUES (?, ?, ?, ?)'
+            'INSERT INTO tagged (problem, tag) '
+            'VALUES (?, ?)'
         )
+        self.conn.execute(query, (problem, tag))
+        self.conn.commit()
+    def remove_tag(self, problem, tag):
+        id = self.get_tag_id(tag)
+        assert tag is not None
 
-        self.conn.execute(query, (id, problem_link, code_link, diff))
+        query = (
+            'DELETE FROM tagged '
+            'WHERE problem = ? AND tag = ?'
+        )
+        self.conn.execute(query, (problem, tag))
         self.conn.commit()
     
+    def commenting(self, problem, comment):
+        query = (
+            'INSERT INTO commented (problem, comment) '
+            'VALUES (?, ?)'
+        )
+        self.conn.execute(query, (problem, comment))
+        self.conn.commit()
     #for local debug
     def get_data(self, table, limit = 10):
         query = (
