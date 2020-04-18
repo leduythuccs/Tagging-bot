@@ -45,6 +45,12 @@ class TaggingDbConn:
             ')'
         )
         self.conn.execute(
+            'CREATE TABLE IF NOT EXISTS submission ('
+            'problem     TEXT,'
+            'link        TEXT'
+            ')'
+        )
+        self.conn.execute(
             'CREATE TABLE IF NOT EXISTS commented ('
             'problem    TEXT,'
             'comment    TEXT'
@@ -53,8 +59,7 @@ class TaggingDbConn:
         self.conn.execute(
             'CREATE TABLE IF NOT EXISTS user ('
             'discord_id         TEXT,'
-            'handle             TEXT,'
-            'current_problem    TEXT'
+            'handle             TEXT'
             ')'
         )
 
@@ -66,7 +71,14 @@ class TaggingDbConn:
         )
         res = self.conn.execute(query, (value, )).fetchone()
         return res is not None
-
+    def add_submission(self, problem, link):
+        cur = self.conn.cursor()
+        query = (
+            'INSERT INTO submission (problem, link) '
+            'VALUES (?, ?)'
+        )
+        cur.execute(query, (problem, link))
+        self.conn.commit()
     def add_handle(self, discord_id, handle):
         if self.check_exists('user', 'discord_id', discord_id):
             query = (
@@ -91,24 +103,6 @@ class TaggingDbConn:
         if res is None or res[0] is None:
             return None
         return res[0]
-    def get_current_problem(self, discord_id):
-        query = (
-            'SELECT current_problem '
-            'FROM user '
-            'WHERE discord_id = ?'
-        )
-        res = self.conn.execute(query, (discord_id, )).fetchone()
-        if res is None or res[0] is None:
-            return None
-        return res[0]
-    def set_current_problem(self, discord_id, problem):
-        query = (
-            'UPDATE user '
-            'SET current_problem = ? '
-            'WHERE discord_id = ?'
-        )
-        self.conn.execute(query, (problem, discord_id)).fetchone()
-        self.conn.commit()
     def add_tag(self, tag):
         assert self.check_exists('tag_info', 'tag', tag) == False, f"Tag {tag} đã tồn tại"
         cur = self.conn.cursor()
@@ -120,6 +114,22 @@ class TaggingDbConn:
         self.conn.commit()
         return cur.lastrowid
 
+    def get_problem_tag(self, problem):
+        query = (
+            'SELECT tag '
+            'FROM tagged '
+            'WHERE problem = ?'
+        )
+        res = self.conn.execute(query, (problem, )).fetchall()
+        return list(map(lambda x: x[0], res))
+    def get_problem_comment(self, problem):
+        query = (
+            'SELECT comment '
+            'FROM commented '
+            'WHERE problem = ?'
+        )
+        res = self.conn.execute(query, (problem, )).fetchall()
+        return list(map(lambda x: x[0], res))
     def get_similar_tag(self, tag):
         tag_table = self.get_data('tag_info', limit=None)
         similar = []
@@ -149,7 +159,25 @@ class TaggingDbConn:
             'WHERE tag = ?'
         )
         return self.conn.execute(query, (tag, )).fetchall()
-
+    def rename(self, old_tag, new_tag):
+        if not self.check_exists('tag_info', 'tag', old_tag):
+            return f"Không tìm thấy tag {old_tag}"
+        if self.check_exists('tag_info', 'tag', new_tag):
+            return f"Tag {new_tag} đã có trong dữ liệu"
+        query = (
+            'UPDATE tag_info '
+            'SET tag = ? '
+            'WHERE tag = ?'
+        )
+        self.conn.execute(query, (new_tag, old_tag))
+        query = (
+            'UPDATE tagged '
+            'SET tag = ? '
+            'WHERE tag = ?'
+        )
+        self.conn.execute(query, (new_tag, old_tag))
+        self.conn.commit()
+        return
     def tagging(self, problem, tag):
         id = self.get_tag_id(tag)
         assert tag is not None

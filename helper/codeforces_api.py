@@ -1,4 +1,3 @@
-
 import requests
 from discord.ext import commands
 import json
@@ -34,6 +33,7 @@ class CallLimitExceededError(TrueApiError):
 
 
 BASE_status = 'https://codeforces.com/api/user.status?handle={0}&lang=en'
+BASE_info = 'https://codeforces.com/api/user.info?handles={0}&lang=en'
 DBPATH = 'database/save'
 async def get_user_status(handle):
     url = BASE_status.format(handle)
@@ -59,10 +59,37 @@ async def get_user_status(handle):
                 p = {}
                 p['submission_id'] = x['id']
                 p['short_link'] = str(contest_id) + '/' + str(x['problem']['index'])
+                if 'rating' not in x['problem']:
+                    continue
+                p['rating'] = x['problem']['rating']
                 p['name'] = x['problem']['name']
                 p['tags'] = x['problem']['tags']
                 res.append(p)
             return res
+    except Exception as e:
+        print(e)
+        raise TrueApiError(str(e))
+    if 'limit exceeded' in comment:
+        raise CallLimitExceededError(comment)
+    if 'not found' in comment:
+        raise HandleNotFoundError(comment, handle)
+    if 'should contain' in e.comment:
+        raise HandleInvalidError(comment, handle)
+                
+    raise TrueApiError(comment)
+async def get_user_info(handle):
+    url = BASE_info.format(handle)
+    try:
+        resp = requests.get(url, timeout=2)
+        try:
+            r = resp.json()
+        except Exception as e:
+            comment = f'CF API did not respond with JSON, status {resp.status}.'
+            raise CodeforcesApiError(comment)
+        if 'comment' in r:
+            comment = r['comment']
+        else:
+            return {'max_rating': r['result'][0]['maxRating']}
     except Exception as e:
         print(e)
         raise TrueApiError(str(e))
@@ -79,17 +106,69 @@ async def get_problem(handle, id):
     if os.path.exists(DBPATH + f'/{id}.json') is False:
         print("Getting data from codeforces")
         data = await get_user_status(handle)
-        print("done")
+        print("Done")
     else:
         data = json.load(open(DBPATH + f'/{id}.json', encoding='utf-8'))
+    if os.path.exists(DBPATH + f'/info_{id}.json') is False:
+        print("Getting user info")
+        user_info = {'done':0}
+        user_info['info'] = await get_user_info(handle)
+        print("Done")
+    else:
+        user_info = json.load(open(DBPATH + f'/info_{id}.json', encoding='utf-8'))
+    L_rating = user_info['info']['max_rating'] - 200
+    R_rating = user_info['info']['max_rating'] + 500
+    if user_info['info']['max_rating'] >= 2200:
+        R_rating = 10000
+    
     tagged_table = TaggingDb.TaggingDb.get_data('tagged', limit=None)
     tagged = set()
     for problem, tag in tagged_table:
         if tag is None:
             continue
         tagged.add(problem)
-    data = list(filter(lambda x: x['short_link'] not in tagged, data))
+    
+    data = list(
+        filter(
+            lambda x: x['short_link'] not in tagged
+            and L_rating <= x['rating']
+            and x['rating'] <= R_rating,
+            data
+        )
+    )
+    user_info['done'] += 1
     json.dump(data, open(DBPATH + f'/{id}.json', 'w', encoding='utf-8'))
+    json.dump(user_info, open(DBPATH + f'/info_{id}.json', 'w', encoding='utf-8'))
     if len(data) == 0:
         return None
+    if user_info['done'] % 5 != 0:
+        return random.choice(data)
+    #get hardest
+    max_r = 0
+    for x in data:
+        max_r = max(max_r, x['rating'])
+    for x in data:
+        if max_r == x['rating']:
+            return x
     return random.choice(data)
+
+def get_current_problem(id):
+    if os.path.exists(DBPATH + f'/info_{id}.json') is False:
+        return None
+    user_info = json.load(open(DBPATH + f'/info_{id}.json', encoding='utf-8'))
+    if 'doing' not in user_info:
+        return None
+    return user_info['doing']
+
+def set_current_problem(id, problem):
+    user_info = json.load(open(DBPATH + f'/info_{id}.json', encoding='utf-8'))
+    previous_problem = None if 'doing' not in user_info else user_info['doing']
+    if previous_problem is not None:
+        data = json.load(open(DBPATH + f'/{id}.json', encoding='utf-8'))
+        if previous_problem in data:
+            data.remove(previous_problem)
+
+    user_info['doing'] = problem
+    if problem is None:
+        user_info.pop('doing')
+    json.dump(user_info, open(DBPATH + f'/info_{id}.json', 'w', encoding='utf-8'))
