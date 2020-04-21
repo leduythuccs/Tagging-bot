@@ -10,15 +10,13 @@ class Handle(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(brief="Set nick codeforces để dùng bot.",
-    usage="nick codeforces của bạn.")
-    async def identify(self, ctx, handle): 
+    @commands.command(brief="Set nick codeforces cho người khác",
+    usage="@user codeforces_handle")
+    async def set(self, ctx, member: discord.Member, handle): 
         """
-        Dùng command này để set nick codeforces.
-        Nếu nick codeforces mình là `leduykhongngu` thì mình dùng:
-        ;tag identify leduykhongngu
+        Dùng command này để set nick codeforces cho người khác
         """
-        discord_id = ctx.author.id
+        discord_id = member.id
         TaggingDb.TaggingDb.add_handle(discord_id, handle)
         await ctx.send(SET_HANDLE_SUCCESS.format(discord_id, handle))
 

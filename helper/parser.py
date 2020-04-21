@@ -1,3 +1,4 @@
+import re
 def tag_parse(args):
     if len(args) == 0:
         return 'Thiếu param rồi. Gõ `;tag help add` đê'
@@ -7,3 +8,21 @@ def tag_parse(args):
         comment = args[-1]
         tags = args[:-1]
     return tags, comment
+# ;tag pick 1339B
+# ;tag pick https://codeforces.com/problemset/problem/1339/B
+# ;tag pick https://codeforces.com/contest/1339/problem/B
+def link_parse(link):
+    p1 = r'problemset/problem/(\d+)/(\w+)'
+    s = re.findall(p1, link)
+    if len(s) != 0:
+        return s[0][0] + '/' + s[0][1]
+    p2 = r'contest/(\d+)/problem/(\w+)'
+    s = re.findall(p2, link)
+    if len(s) != 0:
+        return s[0][0] + '/' + s[0][1]
+    p3 = r'(\d+)(\w+)'
+    s = re.findall(p3, link)
+    if len(s) != 0:
+        return s[0][0] + '/' + s[0][1]
+    return None
+    

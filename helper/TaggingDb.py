@@ -37,7 +37,12 @@ class TaggingDbConn:
             'tag            TEXT'
             ')'
         )
-
+        self.conn.execute(
+            'CREATE TABLE IF NOT EXISTS user_tag_rank ('
+            'discord_id     TEXT,'
+            'problem    TEXT'
+            ')'
+        )
         self.conn.execute(
             'CREATE TABLE IF NOT EXISTS tagged ('
             'problem    TEXT,'
@@ -60,6 +65,11 @@ class TaggingDbConn:
             'CREATE TABLE IF NOT EXISTS user ('
             'discord_id         TEXT,'
             'handle             TEXT'
+            ')'
+        )
+        self.conn.execute(
+            'CREATE TABLE IF NOT EXISTS tagging ('
+            'problem            TEXT'
             ')'
         )
 
@@ -92,6 +102,13 @@ class TaggingDbConn:
                 'VALUES (?, ?)'
             )
         self.conn.execute(query, (handle, discord_id))
+        self.conn.commit()
+    def done(self, discord_id, problem):
+        query = (
+            'INSERT INTO user_tag_rank (discord_id, problem) '
+            'VALUES (?, ?)'
+        )
+        self.conn.execute(query, (discord_id, problem))
         self.conn.commit()
     def get_handle(self, discord_id):
         query = (
@@ -178,6 +195,20 @@ class TaggingDbConn:
         self.conn.execute(query, (new_tag, old_tag))
         self.conn.commit()
         return
+    def in_tagging(self, problem):
+        query = (
+            'INSERT INTO tagging (problem)'
+            'VALUES (?)'
+        )
+        self.conn.execute(query, (problem, ))
+        self.conn.commit()
+    def rm_tagging(self, problem):
+        query = (
+            'DELETE FROM tagging '
+            'WHERE problem = ?'
+        )
+        self.conn.execute(query, (problem, ))
+        self.conn.commit()
     def tagging(self, problem, tag):
         id = self.get_tag_id(tag)
         assert tag is not None

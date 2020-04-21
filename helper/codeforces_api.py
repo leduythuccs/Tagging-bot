@@ -35,6 +35,8 @@ class CallLimitExceededError(TrueApiError):
 BASE_status = 'https://codeforces.com/api/user.status?handle={0}&lang=en'
 BASE_info = 'https://codeforces.com/api/user.info?handles={0}&lang=en'
 DBPATH = 'database/save'
+_IS_TAGGED = 0
+_NOT_FOUND = 1
 async def get_user_status(handle):
     url = BASE_status.format(handle)
     try:
@@ -102,11 +104,35 @@ async def get_user_info(handle):
                 
     raise TrueApiError(comment)
 
+async def pick(handle, id, short_link):
+    if TaggingDb.TaggingDb.check_exists('tagged', 'problem', short_link):
+        return _IS_TAGGED
+    if os.path.exists(DBPATH + f'/info_{id}.json') is False:
+        print("Getting user info")
+        user_info = {'done':0}
+        user_info['info'] = await get_user_info(handle)
+        print("Done")
+        json.dump(user_info, open(DBPATH + f'/info_{id}.json', 'w', encoding='utf-8'))
+    else:
+        user_info = json.load(open(DBPATH + f'/info_{id}.json', encoding='utf-8'))
+    
+    if os.path.exists(DBPATH + f'/{id}.json') is False:
+        print("Getting data from codeforces")
+        data = await get_user_status(handle)
+        print("Done")
+        json.dump(data, open(DBPATH + f'/{id}.json', 'w', encoding='utf-8'))
+    else:
+        data = json.load(open(DBPATH + f'/{id}.json', encoding='utf-8'))
+    for x in data:
+        if x['short_link'] == short_link:
+            return x
+    return _NOT_FOUND
 async def get_problem(handle, id):
     if os.path.exists(DBPATH + f'/{id}.json') is False:
         print("Getting data from codeforces")
         data = await get_user_status(handle)
         print("Done")
+        json.dump(data, open(DBPATH + f'/{id}.json', 'w', encoding='utf-8'))
     else:
         data = json.load(open(DBPATH + f'/{id}.json', encoding='utf-8'))
     if os.path.exists(DBPATH + f'/info_{id}.json') is False:
@@ -137,7 +163,6 @@ async def get_problem(handle, id):
         )
     )
     user_info['done'] += 1
-    json.dump(data, open(DBPATH + f'/{id}.json', 'w', encoding='utf-8'))
     json.dump(user_info, open(DBPATH + f'/info_{id}.json', 'w', encoding='utf-8'))
     if len(data) == 0:
         return None

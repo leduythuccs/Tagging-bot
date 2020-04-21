@@ -20,7 +20,7 @@ def no_dm_check(ctx):
     return True
 
 # Restrict bot usage to inside guild channels only.
-bot.add_check(no_dm_check)
+# bot.add_check(no_dm_check)
 
 @bot.event
 async def on_ready():
