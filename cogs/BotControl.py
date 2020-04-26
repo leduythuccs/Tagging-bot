@@ -47,7 +47,7 @@ class BotControl(commands.Cog):
     # @commands.Cog.listener()
     # async def on_ready(self):
     #     pass
-    
+
     # from TLE bot.
     @commands.command(brief="Check if bot is still alive.")
     @commands.check_any(commands.is_owner(), commands.has_any_role('Admin', 'Mod VNOI'))
@@ -77,7 +77,7 @@ class BotControl(commands.Cog):
     @commands.check_any(commands.is_owner(), commands.has_any_role('Admin', 'Mod VNOI'))
     async def database(self, ctx):
         await ctx.send(file=discord.File('database/tagging.db', filename='tagging.db'))
-    
+
     @commands.command(brief="Update bot & restart")
     @commands.check_any(commands.is_owner(), commands.has_any_role('Admin', 'Mod VNOI'))
     async def update_restart(self, ctx):
@@ -97,6 +97,7 @@ class BotControl(commands.Cog):
         result = subprocess.run(
             ['git', 'pull', 'origin', 'dev'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
         await mess.edit(content='```\n' + result + '\n```')
+
 
 def setup(bot):
     bot.add_cog(BotControl(bot))

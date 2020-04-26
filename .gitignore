@@ -1,3 +1,6 @@
 __pycache__
 .env
 database/save/
+.DS_Store
+config.toml
+tagging.db
