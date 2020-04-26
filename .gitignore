@@ -3,4 +3,3 @@ __pycache__
 database/save/
 .DS_Store
 config.toml
-tagging.db
