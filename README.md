@@ -8,11 +8,11 @@
 ## Installation
 Clone this repository 
 - `python pip install -r requirements`
-- Base on file `.env-example`, create file `.env` and fill it with your bot token
+- Base on file `config-example.toml`, create file `config.toml` and fill it with your bot token
 
 ## How to use
 - Create a discord bot, add it to your discord server.
-- Then use `python main.py` to run the bot. Remember to edit data in `.env`.
+- Then use `python main.py` to run the bot. Remember to edit data in `config.toml`.
 - Use `;tag help` to see list command
     
 ## Developing:
