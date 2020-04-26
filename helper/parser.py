@@ -1,12 +1,18 @@
 import re
-def tag_parse(args):
+_COMMENT_LENGTH_MSG = -1
+def tag_parse(args, is_remove = False):
     if len(args) == 0:
+        if is_remove:
+            return 'Thiếu param rồi. Gõ `;tag help remove` đê'
         return 'Thiếu param rồi. Gõ `;tag help add` đê'
     tags = args
     comment = ""
     if args[-1].count(' ') != 0:
         comment = args[-1]
         tags = args[:-1]
+    comment = comment.strip()
+    if len(comment) != 0 and comment.count(' ') < 2:
+        comment = _COMMENT_LENGTH_MSG
     return tags, comment
 # ;tag pick 1339B
 # ;tag pick https://codeforces.com/problemset/problem/1339/B

@@ -10,13 +10,60 @@ from helper import TaggingDb
 from helper import discord_common
 from helper import parser
 from helper import codeforces_api
-
-_LOG_CHANNEL_ = 699626515385679982
+from helper import table
+from helper import contants
+_LOG_CHANNEL_ = 703171834618576947
 # 2 string a considered as the same if LCS(a, b) >= max(len(a), len(b)) * _LCS_THRESHOLD_
 _LCS_THRESHOLD_ = 0.8  # 80%
 
 
+def make_table(tags):
+    nTag = len(tags)
+    if nTag <= 10:
+        style = table.Style('{:>}  {:<}')
+        t = table.Table(style)
+        t += table.Header('#', 'Tag')
+        t += table.Line()
+        for index, tag in enumerate(tags):
+            t += table.Data(index + 1, tag)
+        return t
+    elif nTag <= 20:
+        style = table.Style('{:>}  {:<}  {:>}  {:<}')
+        t = table.Table(style)
+        t += table.Header('#', 'Tag', '#', 'Tag')
+        t += table.Line()
+        for i in range(0, 10):
+            if (i + 10 < nTag):
+                t += table.Data(i + 1, tags[i], i + 10 + 1, tags[i + 10])
+            else:
+                t += table.Data(i + 1, tags[i], '', '')
+        return t 
+    elif nTag <= 30:
+        style = table.Style('{:>}  {:<}  {:>}  {:<}  {:>}  {:<}')
+        t = table.Table(style)
+        t += table.Header('#', 'Tag', '#', 'Tag', '#', 'Tag')
+        t += table.Line()
+        for i in range(0, 10):
+            if (i + 20 < nTag):
+                t += table.Data(i + 1, tags[i], i + 10 + 1, tags[i + 10], i + 20 + 1, tags[i + 20])
+            else:
+                t += table.Data(i + 1, tags[i], i + 10 + 1, tags[i + 10], '', '')
+        return t
+    raise ValueError
 async def get_similar_tag(ctx, tag):
+    if tag in contants._LV1_TAGS:
+        name = contants._LV1_TAGS[tag]['name']
+        tag_codes = contants._LV1_TAGS[tag]['codes']
+        try:
+            t = make_table(tag_codes)
+        except ValueError:
+            raise ValueError(f"Tag {name} is too long, expected length <= 30, found {len(tag_codes)}")
+        
+        table_str = f'```yml\n{t}\n```'
+        await ctx.author.send(f'Bạn có thể tag chi tiết hơn về tag `{name}` được không <:blowop:665243570696880129>? '
+            'Dưới đây là list một số tag có thể liên quan\n' + table_str)
+        return
+
     similar = TaggingDb.TaggingDb.get_similar_tag(tag)
     if len(similar) == 0:
         embed = discord_common.embed_alert(
@@ -38,6 +85,7 @@ async def get_similar_tag(ctx, tag):
         await ctx.author.send(msg)
         return
     return similar[0][1]
+
 BASE_URL = "https://codeforces.com/contest/{0}/problem/{1}"
 SUBMISSION_BASE_URL = "https://codeforces.com/contest/{0}/submission/{1}"
 
@@ -46,23 +94,33 @@ def short_link_to_msg(short_link):
     contest_id, index = short_link.split('/')
     return BASE_URL.format(contest_id, index)
 
-def problem_to_embed(problem):
+def problem_to_embed(problem, discord_id):
     msg = f"[{problem['name']}]({short_link_to_msg(problem['short_link'])})\n"
     submission_link = SUBMISSION_BASE_URL.format(problem['short_link'].split('/')[0], problem['submission_id'])
     msg += f"[AC submission]({submission_link})\n"
     msg += f"Rating: ({problem['rating']})\n"
     msg += f"Tag gốc từ codeforces: {str(problem['tags'])}\n"
-    tags = TaggingDb.TaggingDb.get_problem_tag(problem['short_link'])
+    tags = TaggingDb.TaggingDb.get_problem_tag(problem['short_link'], discord_id)
     if len(tags) > 0:
         msg += "Các tag đã được add:\n"
         for tag in tags:
             msg += f"  + {tag}\n"
-    comments = TaggingDb.TaggingDb.get_problem_comment(problem['short_link'])
+    comments = TaggingDb.TaggingDb.get_problem_comment(problem['short_link'], discord_id)
     if len(comments) > 0:
         msg += "Các comment đã được add:\n"
         for comment in comments:
             msg += f" + {comment}\n"
     return discord_common.embed_success(msg)
+
+async def handle_new_problem(ctx, problem):
+    codeforces_api.set_current_problem(ctx.author.id, problem)
+    embed = problem_to_embed(problem, ctx.author.id)
+    await ctx.author.send(f"Bạn {ctx.author.mention} ơi, tag giúp mình bài này đi <:blowop:665243570696880129>.\n" +
+    "Để đánh tag bài, dùng `;tag add tag1 tag2 .... \"comment có space\"`.\n" +
+    "Các tag cách nhau bởi dấu cách, comment có thể có hoặc không. \n" + 
+    "Ví dụ: `;tag add dp-tree bitset`\n"+
+    "Hoặc: `;tag add dsu-general \"bài có nhiều cách giải hay, dùng bitset để tối ưu\"` (comment cần có ít nhất 3 từ))" 
+    "Dùng lệnh `;tag done` để hoàn thành, `;tag skip` để bỏ qua.", embed=embed)
 
 class Tag(commands.Cog):
     def __init__(self, bot):
@@ -80,11 +138,12 @@ class Tag(commands.Cog):
         Force tạo tag mới, chỉ được tạo duy nhất 1
         Ví dụ ;tag _create Quy Hoạch Động bao lồi cực mạnh
         """
-        tag = ' '.join(args)
-        tag = TaggingDb.normalize_tag(tag)
-        TaggingDb.TaggingDb.add_tag(tag)
-        if ctx is not None:
-            await ctx.author.send('Tạo tag `{}` thành công'.format(tag))
+        tags = list(filter(lambda x: len(x) > 0, args))
+        for tag in tags:
+            tag = TaggingDb.normalize_tag(tag)
+            TaggingDb.TaggingDb.add_tag(tag)
+            if ctx is not None:
+                await ctx.author.send('Tạo tag `{}` thành công'.format(tag))
 
     @commands.command(brief="Tạo tag mới.",
                       usage="[tag1];[tag2];[tag3];...")
@@ -129,12 +188,12 @@ class Tag(commands.Cog):
     async def add(self, ctx, *args):
         """
         Thêm tag vào bài, lưu ý các tag cần cách nhau bởi space. comment cần được đặt vào giữa 2 dấu \"\". 
-        Không cần comment cũng được. Vì lý do kỹ thuật, trong comment cần có ít nhất 1 space
-        Ví dụ ;tag add dp-tree bitset \"bài hay\"
+        Ví dụ: `;tag add dp-tree bitset dsu-general `\n
+        Hoặc: `;tag add dp-tree \"bài này tuy tag dp-tree nhưng có thể làm thuật toán tham lam tốt hơn\"` (comment cần có ít nhất 3 từ)
         """
         current_problem = codeforces_api.get_current_problem(ctx.author.id)
         if current_problem is None:
-            await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào, hãy dùng lệnh `;tag get` để được phân công bài.")
+            await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào <:sadness:662197924918329365>, hãy dùng lệnh `;tag get` để được phân công bài <:dad:661181642802724894>.")
             return
         problem_short_link = current_problem['short_link']
         # parse arg
@@ -152,43 +211,38 @@ class Tag(commands.Cog):
             if real_tag is None:
                 continue
 
-            TaggingDb.TaggingDb.tagging(problem_short_link, real_tag)
+            TaggingDb.TaggingDb.tagging(problem_short_link, real_tag, ctx.author.id)
 
             msg += '\n-`{}` (giống `{}`).'.format(real_tag, tag)
         if len(msg) != 0:
             await ctx.author.send('Các tag đã tìm thấy:', embed=discord_common.embed_success(msg))
-        if len(comment) > 0:
-            TaggingDb.TaggingDb.commenting(problem_short_link, comment)
+        if comment == parser._COMMENT_LENGTH_MSG:
+            embed = discord_common.embed_alert("Comment cần có ít nhất 3 từ")
+            await ctx.send(embed=embed)
+        elif len(comment) > 0:
+            TaggingDb.TaggingDb.commenting(problem_short_link, comment, ctx.author.id)
         #--------------------------------------------------------------
-        embed = problem_to_embed(current_problem)
-        await ctx.author.send('Thông tin hiện tại của bài:', embed=embed)
+        embed = problem_to_embed(current_problem, ctx.author.id)
+        await ctx.author.send('Nếu tag xong rồi bạn có thể dùng `;tag done` để lấy bài tập mới. Thông tin hiện tại của bài:', embed=embed)
 
     @commands.command(brief="Lấy bài tập mới")
     async def get(self, ctx):
         handle = TaggingDb.TaggingDb.get_handle(ctx.author.id)
         if handle is None:
-            await ctx.author.send(f"Không tìm được codeforces handle của {ctx.author.mention}. Hãy bảo @Lomk set identify")
+            await ctx.author.send(f"Không tìm được codeforces handle của {ctx.author.mention} <:sadness:662197924918329365>. Hãy dùng lệnh `identify` trước")
             return
         problem = await codeforces_api.get_problem(handle, ctx.author.id)
         if problem is None:
-            await ctx.author.send(f"Không tìm được bài nào phù hợp cho {ctx.author.mention}")
+            await ctx.author.send(f"Không tìm được bài nào phù hợp cho {ctx.author.mention} <:sadness:662197924918329365>")
             return
 
         current_problem = codeforces_api.get_current_problem(ctx.author.id)
         if current_problem is not None:
             # todo done info 
-            embed = problem_to_embed(current_problem)
+            embed = problem_to_embed(current_problem, ctx.author.id)
             await ctx.author.send('Thông tin của bài tập hiện tại', embed=embed)
             return
-
-        codeforces_api.set_current_problem(ctx.author.id, problem)
-        TaggingDb.TaggingDb.in_tagging(problem['short_link'])
-        embed = problem_to_embed(problem)
-        await ctx.author.send(f"Bài tập mới cho {ctx.author.mention}.\n" +
-        "Để đánh tag bài, dùng `;tag add tag1 tag2 .... \"comment có space\"`.\n" +
-        "Các tag cách nhau bởi dấu cách, comment có thể có hoặc không. Vì lý do kỹ thuật, trong comment cần có ít nhất 1 space.\n" + 
-        "Ví dụ: `;tag add dp-tree bitset \"bài hay\"`\n"+ 
-        "Dùng lệnh `;tag done` để hoàn thành, `;tag skip` để bỏ qua.", embed=embed)
+        await handle_new_problem(ctx, problem)
 
     @commands.command(brief="Chọn một bài tập")
     async def pick(self, ctx, link):
@@ -200,7 +254,7 @@ class Tag(commands.Cog):
         """
         handle = TaggingDb.TaggingDb.get_handle(ctx.author.id)
         if handle is None:
-            await ctx.author.send(f"Không tìm được codeforces handle của {ctx.author.mention}. Hãy bảo @Lomk set identify")
+            await ctx.author.send(f"Không tìm được codeforces handle của {ctx.author.mention} <:sadness:662197924918329365>. Hãy dùng lệnh `identify` trước")
             return
         short_link = parser.link_parse(link)
         if short_link is None:
@@ -214,47 +268,40 @@ class Tag(commands.Cog):
             await ctx.author.send(f"Bài đã được tag")
             return
         if problem == codeforces_api._NOT_FOUND:
-            await ctx.author.send(f"Không tìm được bài {short_link}, có chắc là đã AC chưa mà tag")
+            await ctx.author.send(f"Không tìm được bài {short_link}, khả năng là bạn chưa AC, nếu đã AC vui lòng tag @Cá Nóc Cắn Cáp để hỗ trợ")
+            return
+        if problem == codeforces_api._RATING_TOO_LOW:
+            await ctx.author.send(f"Không được chọn bài có rating bé hơn {codeforces_api._LIM_RATING}")
             return
         current_problem = codeforces_api.get_current_problem(ctx.author.id)
         if current_problem is not None:
-            embed = problem_to_embed(current_problem)
-            is_tagged = TaggingDb.TaggingDb.check_exists(
-                    'tagged', 'problem', current_problem['short_link'])
+            embed = problem_to_embed(current_problem, ctx.author.id)
+            is_tagged = TaggingDb.TaggingDb.is_tagged(current_problem['short_link'], ctx.author.id)
             if is_tagged:
                 await self.log_channel.send(f"Đội ơn bạn {ctx.author.mention} <:orz:661153248186597386> đã làm xong bài:", embed=embed)
                 TaggingDb.TaggingDb.done(ctx.author.id, current_problem['short_link'])
-                TaggingDb.TaggingDb.rm_tagging(current_problem['short_link'])
                 submission_link = SUBMISSION_BASE_URL.format(current_problem['short_link'].split('/')[0], current_problem['submission_id'])
-                TaggingDb.TaggingDb.add_submission(current_problem['short_link'], submission_link)
+                TaggingDb.TaggingDb.add_submission(current_problem['short_link'], submission_link, ctx.author.id)
                 codeforces_api.set_current_problem(ctx.author.id, None)
             else:
                 await ctx.author.send("Đã bỏ qua bài tập:", embed=embed)
-                TaggingDb.TaggingDb.rm_tagging(current_problem['short_link'])
-                codeforces_api.set_current_problem(ctx.author.id, None)
+                codeforces_api.set_current_problem(ctx.author.id, None, skip=False)
         #-----------------------------------------------------------
-        codeforces_api.set_current_problem(ctx.author.id, problem)
-        TaggingDb.TaggingDb.in_tagging(problem['short_link'])
-        embed = problem_to_embed(problem)
-        await ctx.author.send(f"Bài tập mới cho {ctx.author.mention}.\n" +
-        "Để đánh tag bài, dùng `;tag add tag1 tag2 .... \"comment có space\"`.\n" +
-        "Các tag cách nhau bởi dấu cách, comment có thể có hoặc không. Vì lý do kỹ thuật, trong comment cần có ít nhất 1 space.\n" + 
-        "Ví dụ: `;tag add dp-tree bitset \"bài hay\"`\n"+ 
-        "Dùng lệnh `;tag done` để hoàn thành, `;tag skip` để bỏ qua.", embed=embed)
+        await handle_new_problem(ctx, problem)
     @commands.command(brief="Xóa tag bị add nhầm")
     async def remove(self, ctx, *args):
         """
         Xóa tag đã add vào bài, param giống add
         Ví dụ ;tag remove dp-tree bitset
         """
-        current_problem = TaggingDb.TaggingDb.get_current_problem(
+        current_problem = codeforces_api.get_current_problem(
             ctx.author.id)
         if current_problem is None:
-            await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào, hãy dùng lệnh `;tag get` để được phân công bài.")
+            await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào <:sadness:662197924918329365>, hãy dùng lệnh `;tag get` để được phân công bài.")
             return
         problem_short_link = current_problem['short_link']
         # parse arg
-        params = parser.tag_parse(args)
+        params = parser.tag_parse(args, True)
         if isinstance(params, str):
             embed = discord_common.embed_alert(params)
             await ctx.author.send(embed=embed)
@@ -268,13 +315,13 @@ class Tag(commands.Cog):
             if real_tag is None:
                 continue
 
-            TaggingDb.TaggingDb.remove_tag(problem_short_link, real_tag)
+            TaggingDb.TaggingDb.remove_tag(problem_short_link, real_tag, ctx.author.id)
 
             msg += '\n-`{}` (giống `{}`).'.format(real_tag, tag)
         if len(msg) != 0:
             await ctx.author.send('Các tag đã tìm thấy:', embed=discord_common.embed_success(msg))
         
-        embed = problem_to_embed(current_problem)
+        embed = problem_to_embed(current_problem, ctx.author.id)
         await ctx.author.send('Thông tin hiện tại của bài:', embed=embed)
 
     @commands.command(brief="Hoàn thành bài.")
@@ -286,22 +333,20 @@ class Tag(commands.Cog):
         """
         current_problem = codeforces_api.get_current_problem(ctx.author.id)
         if current_problem is None:
-            await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào, hãy dùng lệnh `;tag get` để được phân công bài.")
+            await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào <:sadness:662197924918329365>, hãy dùng lệnh `;tag get` để được phân công bài.")
             return
-        embed = problem_to_embed(current_problem)
+        embed = problem_to_embed(current_problem, ctx.author.id)
 
-        is_tagged = TaggingDb.TaggingDb.check_exists(
-                'tagged', 'problem', current_problem['short_link'])
+        is_tagged = TaggingDb.TaggingDb.is_tagged(current_problem['short_link'], ctx.author.id)
         # is_commented = TaggingDb.TaggingDb.check_exists(
         #     'commented', 'problem', current_problem['short_link'])
         if not is_tagged:
-            await ctx.author.send("Bài hiện tại đã được đánh tag đâu mà `done`, nếu muốn bỏ qua thì dùng `skip`, các thông tin:", embed=embed)
+            await ctx.author.send("Bạn ơi bài này chưa đc tag ư ư, nếu bạn muốn bỏ qua thì `skip` nha :heart:, các thông tin:", embed=embed)
             return
         await self.log_channel.send(f"Đội ơn bạn {ctx.author.mention} <:orz:661153248186597386> đã làm xong bài:", embed=embed)
         TaggingDb.TaggingDb.done(ctx.author.id, current_problem['short_link'])
-        TaggingDb.TaggingDb.rm_tagging(current_problem['short_link'])
         submission_link = SUBMISSION_BASE_URL.format(current_problem['short_link'].split('/')[0], current_problem['submission_id'])
-        TaggingDb.TaggingDb.add_submission(current_problem['short_link'], submission_link)
+        TaggingDb.TaggingDb.add_submission(current_problem['short_link'], submission_link, ctx.author.id)
         codeforces_api.set_current_problem(ctx.author.id, None)
         await self.get(ctx)
     
@@ -314,30 +359,28 @@ class Tag(commands.Cog):
         """
         current_problem = codeforces_api.get_current_problem(ctx.author.id)
         if current_problem is None:
-            await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào, hãy dùng lệnh `;tag get` để được phân công bài.")
+            await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào <:sadness:662197924918329365>, hãy dùng lệnh `;tag get` để được phân công bài.")
             return
-        embed = problem_to_embed(current_problem)
+        embed = problem_to_embed(current_problem, ctx.author.id)
 
-        is_tagged = TaggingDb.TaggingDb.check_exists(
-                'tagged', 'problem', current_problem['short_link'])
+        is_tagged = TaggingDb.TaggingDb.is_tagged(current_problem['short_link'], ctx.author.id)
         # is_commented = TaggingDb.TaggingDb.check_exists(
         #     'commented', 'problem', current_problem)
         if is_tagged:
-            await ctx.author.send("Bài hiện tại đã được đánh tag rồi sao lại dùng `skip`, dùng `done` đê, các thông tin:", embed=embed)
+            await ctx.author.send("Bạn ơi bài này đã được tag nên không `skip` được nha, hãy dùng `done` <:aquanice:692418002007883836>, các thông tin:", embed=embed)
             return
         await ctx.author.send("Đã bỏ qua bài tập:", embed=embed)
-        TaggingDb.TaggingDb.rm_tagging(current_problem['short_link'])
         codeforces_api.set_current_problem(ctx.author.id, None)
         await self.get(ctx)
 
     @commands.command(brief="Lấy danh sách các bài cùng tag.",
                       usage="[tag]")
-    async def info(self, ctx, *args):
+    @commands.check_any(commands.is_owner(), commands.has_any_role('Admin', 'Mod VNOI'))
+    async def info(self, ctx, tag):
         """
         Lấy danh sách các bài có tag cho trước
         Ví dụ ;tag info dp-tree 
         """
-        tag = ' '.join(args)
         tag = TaggingDb.normalize_tag(tag)
         # ----------------------------
         # get tag
