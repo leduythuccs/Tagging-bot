@@ -1,9 +1,7 @@
 import os
-from dotenv import load_dotenv
 
 current_path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(current_path)
-load_dotenv()
 
 from discord.ext import commands
 from helper import discord_common
@@ -48,7 +46,10 @@ async def on_ready():
 @bot.event
 async def on_command_error(ctx, error):
     print(error)
-    if (str(error) == '!!!! This is not the #bot channel, bot will do nothing'):
+    if (ctx.guild is None):
+        return True
+    if str(ctx.channel.id) != str(_LOG_CHANNEL_):
+        # raise Exception('!!!! This is not the #bot channel, bot will do nothing')
         return
     await ctx.send(embed=discord_common.embed_alert(error))
 

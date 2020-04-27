@@ -14,7 +14,7 @@ from helper import codeforces_api
 from helper import config
 import helper.tag
 
-_LOG_CHANNEL_ = config.config.get("LOG_CHANNEL")
+_THANKS_CHANNEL_ = config.config.get("THANKS_CHANNEL")
 # 2 string a considered as the same if LCS(a, b) >= max(len(a), len(b)) * _LCS_THRESHOLD_
 _LCS_THRESHOLD_ = config.config.get("LCS_THRESHOLD")
 BASE_URL = "https://codeforces.com/contest/{0}/problem/{1}"
@@ -26,12 +26,13 @@ def short_link_to_msg(short_link):
     return BASE_URL.format(contest_id, index)
 
 
-def problem_to_embed(problem, discord_id):
+def problem_to_embed(problem, discord_id, full_information=False):
     msg = f"[{problem['name']}]({short_link_to_msg(problem['short_link'])})\n"
     submission_link = SUBMISSION_BASE_URL.format(problem['short_link'].split('/')[0], problem['submission_id'])
     msg += f"[AC submission]({submission_link})\n"
-    msg += f"Rating: ({problem['rating']})\n"
-    msg += f"Tag gốc từ codeforces: {str(problem['tags'])}\n"
+    if full_information:
+        msg += f"Rating: ({problem['rating']})\n"
+        msg += f"Tag gốc từ codeforces: {str(problem['tags'])}\n"
     tags = TaggingDb.TaggingDb.get_problem_tag(problem['short_link'], discord_id)
     if len(tags) > 0:
         msg += "Các tag đã được add:\n"
@@ -42,12 +43,14 @@ def problem_to_embed(problem, discord_id):
         msg += "Các comment đã được add:\n"
         for comment in comments:
             msg += f" + {comment}\n"
+    if full_information:
+        return discord_common.embed_neutral(msg, discord_common._SUCCESS_BLUE_)
     return discord_common.embed_success(msg)
 
 
 async def handle_new_problem(ctx, problem):
     codeforces_api.set_current_problem(ctx.author.id, problem)
-    embed = problem_to_embed(problem, ctx.author.id)
+    embed = problem_to_embed(problem, ctx.author.id, full_information=True)
     await ctx.author.send(f"Bạn {ctx.author.mention} ơi, tag giúp mình bài này đi <:blowop:665243570696880129>.\n"
                           "Để đánh tag bài, dùng `;add tag1 tag2 .... \"comment ít nhất 3 từ(có thể không có)\"`.\n"
                           "Các tag cách nhau bởi dấu cách\n"
@@ -61,7 +64,7 @@ class Tag(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.log_channel = self.bot.get_channel(int(_LOG_CHANNEL_))
+        self.thanks_channel = self.bot.get_channel(int(_THANKS_CHANNEL_))
 
     @commands.command(brief="Force tạo 1 tag mới.",
                       usage="[tag]")
@@ -218,10 +221,10 @@ class Tag(commands.Cog):
             return
         current_problem = codeforces_api.get_current_problem(ctx.author.id)
         if current_problem is not None:
-            embed = problem_to_embed(current_problem, ctx.author.id)
+            embed = problem_to_embed(current_problem, ctx.author.id, full_information=True)
             is_tagged = TaggingDb.TaggingDb.is_tagged(current_problem['short_link'], ctx.author.id)
             if is_tagged:
-                await self.log_channel.send(f"Đội ơn bạn {ctx.author.mention} <:orz:661153248186597386> đã làm xong bài:", embed=embed)
+                await self.thanks_channel.send(f"Đội ơn bạn {ctx.author.mention} <:orz:661153248186597386> đã làm xong bài:", embed=embed)
                 TaggingDb.TaggingDb.done(ctx.author.id, current_problem['short_link'])
                 submission_link = SUBMISSION_BASE_URL.format(current_problem['short_link'].split('/')[0], current_problem['submission_id'])
                 TaggingDb.TaggingDb.add_submission(current_problem['short_link'], submission_link, ctx.author.id)
@@ -281,7 +284,7 @@ class Tag(commands.Cog):
             await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào <:sadness:662197924918329365>,"
                                   "hãy dùng lệnh `;get` để được phân công bài.")
             return
-        embed = problem_to_embed(current_problem, ctx.author.id)
+        embed = problem_to_embed(current_problem, ctx.author.id, full_information=True)
 
         is_tagged = TaggingDb.TaggingDb.is_tagged(current_problem['short_link'], ctx.author.id)
         # is_commented = TaggingDb.TaggingDb.check_exists(
@@ -289,7 +292,7 @@ class Tag(commands.Cog):
         if not is_tagged:
             await ctx.author.send("Bạn ơi bài này chưa đc tag ư ư, nếu bạn muốn bỏ qua thì `skip` nha :heart:, các thông tin:", embed=embed)
             return
-        await self.log_channel.send(f"Đội ơn bạn {ctx.author.mention} <:orz:661153248186597386> đã làm xong bài:", embed=embed)
+        await self.thanks_channel.send(f"Đội ơn bạn {ctx.author.mention} <:orz:661153248186597386> đã làm xong bài:", embed=embed)
         TaggingDb.TaggingDb.done(ctx.author.id, current_problem['short_link'])
         submission_link = SUBMISSION_BASE_URL.format(current_problem['short_link'].split('/')[0], current_problem['submission_id'])
         TaggingDb.TaggingDb.add_submission(current_problem['short_link'], submission_link, ctx.author.id)

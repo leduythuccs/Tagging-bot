@@ -13,7 +13,7 @@ Clone this repository
 ## How to use
 - Create a discord bot, add it to your discord server.
 - Then use `python main.py` to run the bot. Remember to edit data in `config.toml`.
-- Use `;tag help` to see list command
+- Use `;help` to see list command
     
 ## Developing:
 - How can we create/add multiple tag? Maybe we can use the comma (`,`) to separate tags, small fix in [parser](helper/parser.py) would be okay.

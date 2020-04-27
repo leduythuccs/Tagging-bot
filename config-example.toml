@@ -1,3 +1,4 @@
 LOG_CHANNEL = "logchannel_id"
+THANKS_CHANNEL = "thanks channel id" 
 DISCORD_TOKEN = "bot_token"
 LCS_THRESHOLD = 0.8

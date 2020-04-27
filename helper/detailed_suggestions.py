@@ -16,15 +16,15 @@ _LV1_TAGS = {
         'codes': ["segtree-pure", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic"]
     },
     'ds': {
-        'name': 'Cấu trúc dữ liệu', 
+        'name': 'Cấu trúc dữ liệu',
         'codes': ["bit", "bit2d", "segtree-pure", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
     },
     'data-structure': {
-        'name': 'Cấu trúc dữ liệu', 
+        'name': 'Cấu trúc dữ liệu',
         'codes': ["bit", "bit2d", "segtree-pure", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
     },
     'data-structures': {
-        'name': 'Cấu trúc dữ liệu', 
+        'name': 'Cấu trúc dữ liệu',
         'codes': ["bit", "bit2d", "segtree-pure", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
     },
     'sqrt': {
@@ -39,19 +39,27 @@ _LV1_TAGS = {
         'name': 'Đồ thị',
         'codes': ["graph-general", "dfs/bfs", "scc", "topo-sort", "centroid", "graph-cycle", "biconnected-component", "euler-cycle", "euler-tour", "tree-isomorphism", "lca", "dijkstra", "spfa", "bellman-ford", "floyd", "kruskal", "boruvka", "kirchoff", "max-clique", "dsu-general", "dsu-roll-back", "gomory-hu-tree", "matching-general", "cactus-graph", "planar-graph", "hld"]
     },
+    'graphs': {
+        'name': 'Đồ thị',
+        'codes': ["graph-general", "dfs/bfs", "scc", "topo-sort", "centroid", "graph-cycle", "biconnected-component", "euler-cycle", "euler-tour", "tree-isomorphism", "lca", "dijkstra", "spfa", "bellman-ford", "floyd", "kruskal", "boruvka", "kirchoff", "max-clique", "dsu-general", "dsu-roll-back", "gomory-hu-tree", "matching-general", "cactus-graph", "planar-graph", "hld"]
+    },
+    'shortest-path': {
+        'name': 'Đường đi ngắn nhất',
+        'codes': ["dijkstra", "spfa", "bellman-ford", "floyd"]
+    },
+    'shortest-paths': {
+        'name': 'Đường đi ngắn nhất',
+        'codes': ["dijkstra", "spfa", "bellman-ford", "floyd"]
+    },
     'string': {
-        'name': 'Thuật toán xâu', 
+        'name': 'Thuật toán xâu',
         'codes': ["hashing", "manacher", "z-function", "kmp", "aho-corasick", "suffix-array", "trie", "palin-tree"]
     },
     'math': {
-        'name': 'Toán', 
+        'name': 'Toán',
         'codes': ["math-general", "bitwise", "Combinatorics", "lagrange-inter", "totient-function", "extgcd", "inclusion-exclusion", "mobius", "probability", "multiplicative", "gauss-elim", "fft/ntt", "sieve", "sieve-segment", "catalan", "bell", "Fibonacci", "chinese-remainder"]
     },
     'geometry': {
-        'name': 'Hình học',
-        'codes': ["geometry-pure", "convex-hull", "sweep-line", "picks-theorem", "kd-tree", "precision-issue", "delaunay", "voronoi", "polygon-triangulation", "inversive-geometry"]
-    },
-    'geo': {
         'name': 'Hình học',
         'codes': ["geometry-pure", "convex-hull", "sweep-line", "picks-theorem", "kd-tree", "precision-issue", "delaunay", "voronoi", "polygon-triangulation", "inversive-geometry"]
     },
@@ -76,7 +84,7 @@ _LV1_TAGS = {
         'codes': ["game-nim", "game-sprague-grundy", "game-ad-hoc", "game-minimax"]
     },
     'tree': {
-        'name': 'Cây', 
+        'name': 'Cây',
         'codes': ["dfs/bfs", "centroid", "euler-tour", "tree-isomorphism", "lca", "kruskal", "boruvka", "kirchoff", "hld"]
     }
 }

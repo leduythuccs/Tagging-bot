@@ -1,5 +1,5 @@
 # type: ignore
-from helper import contants
+from helper import detailed_suggestions as suggest
 from helper import config
 from helper import TaggingDb
 from helper import table
@@ -8,9 +8,9 @@ _LCS_THRESHOLD_ = config.config.get("LCS_THRESHOLD")
 
 
 async def get_similar_tag(ctx, tag):
-    if tag in contants._LV1_TAGS:
-        name = contants._LV1_TAGS[tag]['name']
-        tag_codes = contants._LV1_TAGS[tag]['codes']
+    if tag in suggest._LV1_TAGS:
+        name = suggest._LV1_TAGS[tag]['name']
+        tag_codes = suggest._LV1_TAGS[tag]['codes']
         try:
             t = table.make_table(tag_codes)
         except ValueError:
