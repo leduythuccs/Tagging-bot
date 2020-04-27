@@ -49,10 +49,10 @@ async def handle_new_problem(ctx, problem):
     codeforces_api.set_current_problem(ctx.author.id, problem)
     embed = problem_to_embed(problem, ctx.author.id)
     await ctx.author.send(f"Bạn {ctx.author.mention} ơi, tag giúp mình bài này đi <:blowop:665243570696880129>.\n"
-                          "Để đánh tag bài, dùng `;tag add tag1 tag2 .... \"comment ít nhất 3 từ(có thể không có)\"`.\n"
+                          "Để đánh tag bài, dùng `;add tag1 tag2 .... \"comment ít nhất 3 từ(có thể không có)\"`.\n"
                           "Các tag cách nhau bởi dấu cách\n"
-                          "Ví dụ: `;tag add bit2d dp-bitmask \"dùng bitset để tối ưu\"`\n"
-                          "Nếu bạn muốn bỏ qua thì dùng `tag skip` nha :cry:", embed=embed)
+                          "Ví dụ: `;add bit2d dp-bitmask \"dùng bitset để tối ưu\"`\n"
+                          "Nếu bạn muốn bỏ qua thì dùng `;skip` nha :cry:", embed=embed)
 
 
 class Tag(commands.Cog):
@@ -69,7 +69,7 @@ class Tag(commands.Cog):
     async def _create(self, ctx, *args):
         """
         Force tạo tag mới, chỉ được tạo duy nhất 1
-        Ví dụ ;tag _create Quy Hoạch Động bao lồi cực mạnh
+        Ví dụ ;_create Quy Hoạch Động bao lồi cực mạnh
         """
         tags = list(filter(lambda x: len(x) > 0, args))
         for tag in tags:
@@ -84,7 +84,7 @@ class Tag(commands.Cog):
     async def create(self, ctx, *args):
         """
         Tạo (nhiều) tag mới, có thể có unicode, các tag cách nhau bởi dấu `;`
-        Ví dụ ;tag create Quy Hoạch Động; Segment tree
+        Ví dụ ;create Quy Hoạch Động; Segment tree
         """
         tags = list(filter(lambda x: len(x) > 0, args))
         error_msg = ""
@@ -121,13 +121,13 @@ class Tag(commands.Cog):
     async def add(self, ctx, *args):
         """
         Thêm tag vào bài, lưu ý các tag cần cách nhau bởi space. comment cần được đặt vào giữa 2 dấu \"\".
-        Ví dụ: `;tag add dp-tree bitset dsu-general `\n
-        Hoặc: `;tag add dp-tree \"bài này tuy tag dp-tree nhưng có thể làm thuật toán tham lam tốt hơn\"` (comment cần có ít nhất 3 từ)
+        Ví dụ: `;add dp-tree bitset dsu-general `\n
+        Hoặc: `;add dp-tree \"bài này tuy tag dp-tree nhưng có thể làm thuật toán tham lam tốt hơn\"` (comment cần có ít nhất 3 từ)
         """
         current_problem = codeforces_api.get_current_problem(ctx.author.id)
         if current_problem is None:
             await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào <:sadness:662197924918329365>," +
-                                  "hãy dùng lệnh `;tag get` để được phân công bài <:dad:661181642802724894>.")
+                                  "hãy dùng lệnh `;get` để được phân công bài <:dad:661181642802724894>.")
             return
         problem_short_link = current_problem['short_link']
         # parse arg
@@ -162,7 +162,7 @@ class Tag(commands.Cog):
         if any_error:
             await ctx.author.send('Thông tin hiện tại của bài:', embed=embed)
         else:
-            await ctx.author.send('Nếu tag xong rồi bạn có thể dùng `;tag done` để lấy bài tập mới.'
+            await ctx.author.send('Nếu tag xong rồi bạn có thể dùng `;done` để lấy bài tập mới.'
                                   'Thông tin hiện tại của bài:', embed=embed)
 
     @commands.command(brief="Lấy bài tập mới")
@@ -189,9 +189,9 @@ class Tag(commands.Cog):
     async def pick(self, ctx, link):
         """
             Tự chọn một bài tập để tag, yêu cầu bài này phải AC trước đó rồi
-            ;tag pick 1339B
-            ;tag pick https://codeforces.com/problemset/problem/1339/B
-            ;tag pick https://codeforces.com/contest/1339/problem/B
+            ;pick 1339B
+            ;pick https://codeforces.com/problemset/problem/1339/B
+            ;pick https://codeforces.com/contest/1339/problem/B
         """
         handle = TaggingDb.TaggingDb.get_handle(ctx.author.id)
         if handle is None:
@@ -201,9 +201,9 @@ class Tag(commands.Cog):
         short_link = parser.link_parse(link)
         if short_link is None:
             await ctx.author.send(f"Format link không đúng, vui lòng dùng 1 trong 3 format sau:\n"
-                                  ";tag pick 1339B\n"
-                                  ";tag pick https://codeforces.com/problemset/problem/1339/B\n"
-                                  ";tag pick https://codeforces.com/contest/1339/problem/B\n")
+                                  ";pick 1339B\n"
+                                  ";pick https://codeforces.com/problemset/problem/1339/B\n"
+                                  ";pick https://codeforces.com/contest/1339/problem/B\n")
             return
         problem = await codeforces_api.pick(handle, ctx.author.id, short_link)
         if problem == codeforces_api._IS_TAGGED:
@@ -236,13 +236,13 @@ class Tag(commands.Cog):
     async def remove(self, ctx, *args):
         """
         Xóa tag đã add vào bài, param giống add
-        Ví dụ ;tag remove dp-tree bitset
+        Ví dụ ;remove dp-tree bitset
         """
         current_problem = codeforces_api.get_current_problem(
             ctx.author.id)
         if current_problem is None:
             await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào <:sadness:662197924918329365>,"
-                                  "hãy dùng lệnh `;tag get` để được phân công bài.")
+                                  "hãy dùng lệnh `;get` để được phân công bài.")
             return
         problem_short_link = current_problem['short_link']
         # parse arg
@@ -273,13 +273,13 @@ class Tag(commands.Cog):
     async def done(self, ctx):
         """
         Hoàn thành bài tập đang làm
-        Ví dụ ;tag done
+        Ví dụ ;done
         sẽ hoàn thành việc tag bài hiện tại và được lấy bài mới
         """
         current_problem = codeforces_api.get_current_problem(ctx.author.id)
         if current_problem is None:
             await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào <:sadness:662197924918329365>,"
-                                  "hãy dùng lệnh `;tag get` để được phân công bài.")
+                                  "hãy dùng lệnh `;get` để được phân công bài.")
             return
         embed = problem_to_embed(current_problem, ctx.author.id)
 
@@ -300,13 +300,13 @@ class Tag(commands.Cog):
     async def skip(self, ctx, *args):
         """
         Bỏ quả bài tập đang làm
-        Ví dụ ;tag skip
+        Ví dụ ;skip
         sẽ hoàn thành việc tag bài hiện tại và được lấy bài mới
         """
         current_problem = codeforces_api.get_current_problem(ctx.author.id)
         if current_problem is None:
             await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào <:sadness:662197924918329365>,"
-                                  "hãy dùng lệnh `;tag get` để được phân công bài.")
+                                  "hãy dùng lệnh `;get` để được phân công bài.")
             return
         embed = problem_to_embed(current_problem, ctx.author.id)
 
@@ -327,7 +327,7 @@ class Tag(commands.Cog):
     async def info(self, ctx, tag):
         """
         Lấy danh sách các bài có tag cho trước
-        Ví dụ ;tag info dp-tree
+        Ví dụ ;info dp-tree
         """
         tag = TaggingDb.normalize_tag(tag)
         # ----------------------------

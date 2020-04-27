@@ -28,7 +28,8 @@ class Handle(commands.Cog):
     async def identify(self, ctx, handle):
         """
         Dùng command này để set nick codeforces:
-
+        Ví dụ account codeforces của mình là leduykhongngu thì mình dùng:
+        ;identify leduykhongngu
         """
         if ctx.guild is None:
             await ctx.send("Lệnh này chỉ được dùng ở server discord của VNOI, không được dùng trong tin nhắn")
