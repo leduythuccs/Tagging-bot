@@ -1,3 +1,4 @@
+# type: ignore
 from discord.ext import commands
 import discord
 import asyncio
