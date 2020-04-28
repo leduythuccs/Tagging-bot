@@ -245,6 +245,15 @@ class TaggingDbConn:
         self.conn.commit()
     
     def commenting(self, problem, comment, discord_id):
+        comment = comment.strip()
+        query = (
+            'SELECT 1 '
+            'FROM commented '
+            'WHERE problem = ? AND comment = ? AND discord_id = ?'
+        )
+        if self.conn.execute(query, (problem, comment, discord_id)).fetchone() is not None:
+            return
+
         query = (
             'INSERT INTO commented (problem, comment, discord_id) '
             'VALUES (?, ?, ?)'

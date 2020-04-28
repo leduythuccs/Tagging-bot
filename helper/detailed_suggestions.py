@@ -17,19 +17,19 @@ _LV1_TAGS = {
     },
     'ds': {
         'name': 'Cấu trúc dữ liệu',
-        'codes': ["bit", "bit2d", "segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
+        'codes': ["bit", "bit2d", "segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue", "binary-lifting"]
     },
     'data-structure': {
         'name': 'Cấu trúc dữ liệu',
-        'codes': ["bit", "bit2d", "segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
+        'codes': ["bit", "bit2d", "segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue", "binary-lifting"]
     },
     'data-structures': {
         'name': 'Cấu trúc dữ liệu',
-        'codes': ["bit", "bit2d", "segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
+        'codes': ["bit", "bit2d", "segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue", "binary-lifting"]
     },
     'sqrt': {
         'name': 'Chia căn',
-        'codes': ["sqrt-buckets", "sqrt-2way", "sqrt-babygiant"]
+        'codes': ["sqrt-buffer", "sqrt-buckets", "sqrt-2way", "sqrt-babygiant"]
     },
     'mo': {
         'name': 'Thuật toán Mo',
@@ -57,7 +57,7 @@ _LV1_TAGS = {
     },
     'math': {
         'name': 'Toán',
-        'codes': ["math-general", "bitwise", "Combinatorics", "lagrange-inter", "totient-function", "extgcd", "inclusion-exclusion", "mobius", "probability", "multiplicative", "gauss-elim", "fft/ntt", "sieve", "sieve-segment", "catalan", "bell", "Fibonacci", "chinese-remainder"]
+        'codes': ["math-general", "number-theory", "bitwise", "Combinatorics", "lagrange-inter", "totient-function", "extgcd", "inclusion-exclusion", "mobius", "probability", "multiplicative", "gauss-elim", "fft/ntt", "sieve", "sieve-segment", "catalan", "bell", "Fibonacci", "chinese-remainder"]
     },
     'geometry': {
         'name': 'Hình học',
@@ -69,7 +69,7 @@ _LV1_TAGS = {
     },
     'matching': {
         'name': 'Cặp ghép',
-        'codes': ["matching-bipartie", "matching-hungarian", "matching-konig", "matching-hall", "matching-general"]
+        'codes': ["matching-bipartite", "matching-hungarian", "matching-konig", "matching-hall", "matching-general"]
     },
     'flow': {
         'name': 'Luồng',

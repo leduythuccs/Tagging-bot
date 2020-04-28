@@ -171,10 +171,12 @@ async def get_problem(handle, id):
     else:
         user_info = json.load(open(DBPATH + f'/info_{id}.json', encoding='utf-8'))
     L_rating = max(_LIM_RATING, user_info['info']['max_rating'] - 200)
-    R_rating = user_info['info']['max_rating'] + 500
+    R_rating = max(user_info['info']['max_rating'] + 500, 2000)
     if user_info['info']['max_rating'] >= 2200:
         R_rating = 10000
-
+        L_rating = max(_LIM_RATING, user_info['info']['max_rating'] - 300)
+    if str(id) == "182882392787255297": #Tò mò cực mạnh ko cần max rating
+        R_rating = 10000
     tagged_table = TaggingDb.TaggingDb.get_data('tagged', limit=None)
     tagged = {}
     for problem, tag, discord_id in tagged_table:
@@ -182,7 +184,7 @@ async def get_problem(handle, id):
             continue
         if problem not in tagged:
             tagged[problem] = set()
-        tagged[problem].add(discord_id)
+        tagged[problem].add(int(discord_id))
 
     data = list(
         filter(
