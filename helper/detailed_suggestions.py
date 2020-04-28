@@ -5,27 +5,27 @@ _LV1_TAGS = {
     },
     'segtree': {
         'name': 'Segment tree',
-        'codes': ["segtree-pure", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic"]
+        'codes': ["segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic"]
     },
     'segment-tree': {
         'name': 'Segment tree',
-        'codes': ["segtree-pure", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic"]
+        'codes': ["segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic"]
     },
     'it': {
         'name': 'Segment tree',
-        'codes': ["segtree-pure", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic"]
+        'codes': ["segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic"]
     },
     'ds': {
         'name': 'Cấu trúc dữ liệu',
-        'codes': ["bit", "bit2d", "segtree-pure", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
+        'codes': ["bit", "bit2d", "segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
     },
     'data-structure': {
         'name': 'Cấu trúc dữ liệu',
-        'codes': ["bit", "bit2d", "segtree-pure", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
+        'codes': ["bit", "bit2d", "segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
     },
     'data-structures': {
         'name': 'Cấu trúc dữ liệu',
-        'codes': ["bit", "bit2d", "segtree-pure", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
+        'codes': ["bit", "bit2d", "segtree-general", "segtree-walk", "segtree-2d", "segtree-persistent", "segtree-beats", "segtree-dynamic", "rmq", "rmq2d", "partial-sum", "bitset", "order-statistic", "treap/splay", "lichao-tree", "monotoic-queue"]
     },
     'sqrt': {
         'name': 'Chia căn',
@@ -37,11 +37,11 @@ _LV1_TAGS = {
     },
     'graph': {
         'name': 'Đồ thị',
-        'codes': ["graph-general", "dfs/bfs", "scc", "topo-sort", "centroid", "graph-cycle", "biconnected-component", "euler-cycle", "euler-tour", "tree-isomorphism", "lca", "dijkstra", "spfa", "bellman-ford", "floyd", "kruskal", "boruvka", "kirchoff", "max-clique", "dsu-general", "dsu-roll-back", "gomory-hu-tree", "matching-general", "cactus-graph", "planar-graph", "hld"]
+        'codes': ["graph-general", "dfs/bfs", "scc", "topo-sort", "centroid", "graph-cycle", "biconnected-component", "euler-cycle", "euler-tour", "tree-isomorphism", "lca", "dijkstra", "spfa", "bellman-ford", "floyd", "kruskal", "boruvka", "kirchoff", "max-clique", "dsu-general", "dsu-roll-back", "gomory-hu-tree", "cactus-graph", "planar-graph", "hld"]
     },
     'graphs': {
         'name': 'Đồ thị',
-        'codes': ["graph-general", "dfs/bfs", "scc", "topo-sort", "centroid", "graph-cycle", "biconnected-component", "euler-cycle", "euler-tour", "tree-isomorphism", "lca", "dijkstra", "spfa", "bellman-ford", "floyd", "kruskal", "boruvka", "kirchoff", "max-clique", "dsu-general", "dsu-roll-back", "gomory-hu-tree", "matching-general", "cactus-graph", "planar-graph", "hld"]
+        'codes': ["graph-general", "dfs/bfs", "scc", "topo-sort", "centroid", "graph-cycle", "biconnected-component", "euler-cycle", "euler-tour", "tree-isomorphism", "lca", "dijkstra", "spfa", "bellman-ford", "floyd", "kruskal", "boruvka", "kirchoff", "max-clique", "dsu-general", "dsu-roll-back", "gomory-hu-tree", "cactus-graph", "planar-graph", "hld"]
     },
     'shortest-path': {
         'name': 'Đường đi ngắn nhất',
@@ -61,7 +61,7 @@ _LV1_TAGS = {
     },
     'geometry': {
         'name': 'Hình học',
-        'codes': ["geometry-pure", "convex-hull", "sweep-line", "picks-theorem", "kd-tree", "precision-issue", "delaunay", "voronoi", "polygon-triangulation", "inversive-geometry"]
+        'codes': ["geometry-general", "convex-hull", "sweep-line", "picks-theorem", "kd-tree", "precision-issue", "delaunay", "voronoi", "polygon-triangulation", "inversive-geometry"]
     },
     'dsu': {
         'name': 'Disjoin set',
@@ -69,11 +69,11 @@ _LV1_TAGS = {
     },
     'matching': {
         'name': 'Cặp ghép',
-        'codes': ["matching-pure", "matching-hungarian", "matching-konig", "matching-hall"]
+        'codes': ["matching-bipartie", "matching-hungarian", "matching-konig", "matching-hall", "matching-general"]
     },
     'flow': {
         'name': 'Luồng',
-        'codes': ["flow-pure", "flow-demands", "flow-mincost"]
+        'codes': ["flow-general", "flow-demands", "flow-mincost"]
     },
     'greedy': {
         'name': 'Tham lam',
