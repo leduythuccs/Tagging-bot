@@ -10,6 +10,8 @@ from helper import config as config
 token = config.config.get("DISCORD_TOKEN")
 _LOG_CHANNEL_ = config.config.get("LOG_CHANNEL")
 def setup():
+    if os.path.exists('database') is False:
+        os.mkdir('database')
     if os.path.exists('database/save') is False:
         os.mkdir('database/save')
 setup()
