@@ -1,23 +1,24 @@
 # type: ignore
-from helper import detailed_suggestions as suggest
 from helper import config
 from helper import TaggingDb
 from helper import table
 from helper import discord_common
+import json
 _LCS_THRESHOLD_ = config.config.get("LCS_THRESHOLD")
 
 
 async def get_similar_tag(ctx, tag):
-    if tag in suggest._LV1_TAGS:
-        name = suggest._LV1_TAGS[tag]['name']
-        tag_codes = suggest._LV1_TAGS[tag]['codes']
+    _LV1_TAGS = json.load(open('database/detailed_suggestions.json', encoding='utf-8'))
+    if tag in _LV1_TAGS:
+        name = _LV1_TAGS[tag]['name']
+        tag_codes = _LV1_TAGS[tag]['codes']
         try:
             t = table.make_table(tag_codes)
         except ValueError:
             raise ValueError(f"Tag {name} is too long, expected length <= 30, found {len(tag_codes)}")
 
         table_str = f'```yml\n{t}\n```'
-        await ctx.author.send(f'Bạn có thể tag chi tiết hơn về tag `{name}` được không <:blowop:665243570696880129>? '
+        await ctx.author.send(f'Bạn có thể ghi chi tiết hơn về tag `{name}` được không <:blowop:665243570696880129>? '
                               'Dưới đây là list một số tag có thể liên quan\n' + table_str)
         return
 

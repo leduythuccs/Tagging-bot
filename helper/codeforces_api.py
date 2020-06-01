@@ -4,7 +4,7 @@ import json
 from helper import TaggingDb
 import os
 import random
-
+import re
 
 class CodeforcesApiError(commands.CommandError):
     """Base class for all API related errors."""
@@ -43,7 +43,63 @@ _IS_TAGGED = 0
 _NOT_FOUND = 1
 _RATING_TOO_LOW = 2
 _LIM_RATING = 1700
-
+contests = None
+async def mapping_problem_rating(contest_id: str, index: str, current_rating: int)->int:
+    global contests
+    if contests is None:
+        contests = await get_contests_info()
+    contest_id = int(contest_id)
+    contest_type = contests[contest_id]["div"] if contest_id in contests else "unk"
+    if contest_type == "div2":
+        if index == "D":
+            return max(current_rating, 1900)
+        if index == "E":
+            return max(current_rating, 2300)
+        if index == "F":
+            return max(current_rating, 2500)
+    if contest_type == "div1":
+        if index == "C":
+            return max(current_rating, 2300)
+        if index == "D":
+            return max(current_rating, 2500)
+        if index == "E":
+            return max(current_rating, 2700)
+    if contest_type == "comb":
+        if index == "H" or index == "G":
+            return max(current_rating, 2700)
+    return current_rating
+async def get_contests_info():
+    url = "https://codeforces.com/api/contest.list?lang=en"
+    try:
+        resp = requests.get(url, timeout=2)
+        try:
+            r = resp.json()
+        except Exception as e:
+            comment = f'CF API did not respond with JSON, status {resp.status}.'
+            raise CodeforcesApiError(comment)
+        if 'comment' in r:
+            comment = r['comment']
+        else:
+            res = {}
+            for contest in r["result"]:
+                div1 = (len(re.findall(r"Div\.* *1", contest["name"])) != 0)
+                div2 = (len(re.findall(r"Div\.* *2", contest["name"])) != 0)
+                comb = (len(re.findall(r"Hello|Good bye|Global", contest["name"])) != 0)
+                if (div1 and div2) or comb:
+                    res[contest["id"]] = {"name": contest["name"], "div": "comb"}
+                elif div1:
+                    res[contest["id"]] = {"name": contest["name"], "div": "div1"}
+                elif div2:
+                    res[contest["id"]] = {"name": contest["name"], "div": "div2"}
+                else:
+                    res[contest["id"]] = {"name": contest["name"], "div": "unk"}
+            return res
+    except Exception as e:
+        print(e)
+        raise TrueApiError(str(e), 'Codeforces API error:\n' + str(e))
+    if 'limit exceeded' in comment:
+        raise CallLimitExceededError(comment)
+    raise TrueApiError(comment, 'Codeforces API error:\n' + comment)
 
 async def get_user_status(handle):
     url = BASE_status.format(handle)
@@ -71,14 +127,16 @@ async def get_user_status(handle):
                 p['short_link'] = str(contest_id) + '/' + str(x['problem']['index'])
                 if 'rating' not in x['problem']:
                     continue
-                p['rating'] = x['problem']['rating']
+                p['rating'] = await mapping_problem_rating(str(contest_id), str(x['problem']['index']), int(x['problem']['rating']))
                 p['name'] = x['problem']['name']
                 p['tags'] = x['problem']['tags']
+                if '*special' in p['tags'] or 'special' in p['tags']:
+                    continue
                 res.append(p)
             return res
     except Exception as e:
         print(e)
-        raise TrueApiError(str(e))
+        raise TrueApiError(str(e), 'Codeforces API error:\n' + str(e))
     if 'limit exceeded' in comment:
         raise CallLimitExceededError(comment)
     if 'not found' in comment:
@@ -86,7 +144,7 @@ async def get_user_status(handle):
     if 'should contain' in e.comment:
         raise HandleInvalidError(comment, handle)
 
-    raise TrueApiError(comment)
+    raise TrueApiError(comment, 'Codeforces API error:\n' + comment)
 
 
 async def get_user_info(handle):
@@ -101,10 +159,10 @@ async def get_user_info(handle):
         if 'comment' in r:
             comment = r['comment']
         else:
-            return {'max_rating': r['result'][0]['maxRating']}
+            return {'max_rating': r['result'][0]['maxRating'] if 'maxRating' in r['result'][0] else 1500}
     except Exception as e:
         print(e)
-        raise TrueApiError(str(e))
+        raise TrueApiError(str(e), 'Codeforces API error:\n' + str(e))
     if 'limit exceeded' in comment:
         raise CallLimitExceededError(comment)
     if 'not found' in comment:
@@ -112,7 +170,7 @@ async def get_user_info(handle):
     if 'should contain' in e.comment:
         raise HandleInvalidError(comment, handle)
 
-    raise TrueApiError(comment)
+    raise TrueApiError(comment, 'Codeforces API error:\n' + comment)
 
 def get_skipped(id):
     if os.path.exists(DBPATH + f'/skip_{id}.json') is False:
@@ -154,6 +212,15 @@ async def pick(handle, id, short_link):
             return x
     return _NOT_FOUND
 
+async def force_pick(handle, id, short_link, submission_link):
+    p = {}
+    p['short_link'] = short_link
+    p['submission_id'] = "null"
+    p['submission_link'] = submission_link
+    p['rating'] = "unknown"
+    p['name'] = short_link
+    p['tags'] = "unknown"
+    return p
 
 async def get_problem(handle, id):
     if os.path.exists(DBPATH + f'/{id}.json') is False:
@@ -177,6 +244,15 @@ async def get_problem(handle, id):
         L_rating = max(_LIM_RATING, user_info['info']['max_rating'] - 300)
     if str(id) == "182882392787255297": #Tò mò cực mạnh ko cần max rating
         R_rating = 10000
+    if str(id) == "557515828270989333": #Vì sự sống của project
+        R_rating = 1800
+    if str(id) == "507060246959882251": #bjn orz
+        R_rating = 2700
+        L_rating = 1700
+    if str(id) == "343242804492763138": #bach orz
+        R_rating = 2700
+    if str(id) == "170857535962611712": #Mofk dirty farm 
+        L_rating = min(L_rating, 2200)
     tagged_table = TaggingDb.TaggingDb.get_data('tagged', limit=None)
     tagged = {}
     for problem, tag, discord_id in tagged_table:
@@ -226,9 +302,7 @@ def set_current_problem(id, problem, skip=True):
     user_info = json.load(open(DBPATH + f'/info_{id}.json', encoding='utf-8'))
     previous_problem = None if 'doing' not in user_info else user_info['doing']
     if previous_problem is not None:
-        data = json.load(open(DBPATH + f'/{id}.json', encoding='utf-8'))
-        if skip and previous_problem in data:
-            data.remove(previous_problem)
+        if skip:
             skip_problem(id, previous_problem)
 
     user_info['doing'] = problem
