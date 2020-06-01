@@ -21,6 +21,12 @@ class Handle(commands.Cog):
         """
         discord_id = member.id
         TaggingDb.TaggingDb.add_handle(discord_id, handle)
+        if os.path.exists('database/save/' + str(discord_id) + '.json'):
+            os.remove('database/save/' + str(discord_id) + '.json')
+        
+        if os.path.exists('database/save/info_' + str(discord_id) + '.json'):
+            os.remove('database/save/info_' + str(discord_id) + '.json')
+        
         await ctx.send(SET_HANDLE_SUCCESS.format(discord_id, handle))
 
     @commands.command(brief="Tự set nick codeforces",

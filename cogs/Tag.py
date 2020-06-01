@@ -25,10 +25,14 @@ def short_link_to_msg(short_link):
     contest_id, index = short_link.split('/')
     return BASE_URL.format(contest_id, index)
 
-
+def get_submission_link(problem):
+    if problem['submission_id'] == "null":
+        return problem["submission_link"]
+    else:
+        return SUBMISSION_BASE_URL.format(problem['short_link'].split('/')[0], problem['submission_id'])
 def problem_to_embed(problem, discord_id, full_information=False):
     msg = f"[{problem['name']}]({short_link_to_msg(problem['short_link'])})\n"
-    submission_link = SUBMISSION_BASE_URL.format(problem['short_link'].split('/')[0], problem['submission_id'])
+    submission_link = get_submission_link(problem)
     msg += f"[AC submission]({submission_link})\n"
     if full_information:
         msg += f"Rating: ({problem['rating']})\n"
@@ -52,6 +56,7 @@ async def handle_new_problem(ctx, problem):
     codeforces_api.set_current_problem(ctx.author.id, problem)
     embed = problem_to_embed(problem, ctx.author.id, full_information=True)
     await ctx.author.send(f"Bạn {ctx.author.mention} ơi, tag giúp mình bài này đi <:blowop:665243570696880129>.\n"
+                          "List tag xem ở đây nè: <https://bit.ly/2yOPvuy>\n"
                           "Để đánh tag bài, dùng `;add tag1 tag2 .... \"comment ít nhất 3 từ(có thể không có)\"`.\n"
                           "Các tag cách nhau bởi dấu cách\n"
                           "Ví dụ: `;add bit2d dp-bitmask \"dùng bitset để tối ưu\"`\n"
@@ -107,7 +112,21 @@ class Tag(commands.Cog):
         if len(added_msg) > 0:
             embed = discord_common.embed_success(added_msg)
             await ctx.author.send('Các tag đã được thêm:', embed=embed)
-
+    @commands.command(brief="Thêm tag vào suggestion")
+    @commands.check_any(commands.is_owner(), commands.has_any_role('Admin', 'Mod VNOI'))
+    async def suggest(self, ctx, lv1_tag, tag):
+        tag = TaggingDb.normalize_tag(tag)
+        lv1_tag = TaggingDb.normalize_tag(lv1_tag)
+        _LV1_TAGS = json.load(open('database/detailed_suggestions.json', encoding='utf-8'))
+        if lv1_tag not in _LV1_TAGS:
+            msg = [x for x in _LV1_TAGS]
+            embed = discord_common.embed_alert(f"Không thấy suggestion {lv1_tag}.\n"
+                f"Các lv1 tag hiện có: {', '.join([x for x in _LV1_TAGS])}")
+            await ctx.author.send(embed=embed)
+            return
+        _LV1_TAGS[lv1_tag]['codes'].append(tag)
+        json.dump(_LV1_TAGS, open('database/detailed_suggestions.json', 'w', encoding='utf-8'))
+        await ctx.author.send(f"Đã thêm. Các tag có trong `{_LV1_TAGS[lv1_tag]['name']}`:\n{_LV1_TAGS[lv1_tag]['codes']}")
     @commands.command(brief="Đổi tên tag")
     @commands.check_any(commands.is_owner(), commands.has_any_role('Admin', 'Mod VNOI'))
     async def modify(self, ctx, old_tag, new_tag):
@@ -117,6 +136,14 @@ class Tag(commands.Cog):
         if s is not None:
             embed = discord_common.embed_alert(s)
             await ctx.author.send(embed=embed)
+            return
+        # update suggestion
+        _LV1_TAGS = json.load(open('database/detailed_suggestions.json', encoding='utf-8'))
+        for x in _LV1_TAGS:
+            for i, tag in enumerate(_LV1_TAGS[x]['codes']):
+                if tag == old_tag:
+                    _LV1_TAGS[x]['codes'][i] = new_tag
+        json.dump(_LV1_TAGS, open('database/detailed_suggestions.json', 'w', encoding='utf-8'))
         await ctx.author.send(f'Đã đổi tên tag {old_tag} sang {new_tag}')
 
     @commands.command(brief="Thêm tag vào bài .",
@@ -226,7 +253,46 @@ class Tag(commands.Cog):
             if is_tagged:
                 await self.thanks_channel.send(f"Đội ơn bạn {ctx.author.mention} <:orz:661153248186597386> đã làm xong bài:", embed=embed)
                 TaggingDb.TaggingDb.done(ctx.author.id, current_problem['short_link'])
-                submission_link = SUBMISSION_BASE_URL.format(current_problem['short_link'].split('/')[0], current_problem['submission_id'])
+                submission_link = get_submission_link(current_problem)
+                TaggingDb.TaggingDb.add_submission(current_problem['short_link'], submission_link, ctx.author.id)
+                codeforces_api.set_current_problem(ctx.author.id, None)
+            else:
+                await ctx.author.send("Đã bỏ qua bài tập:", embed=embed)
+                codeforces_api.set_current_problem(ctx.author.id, None, skip=False)
+        # -----------------------------------------------------------
+        await handle_new_problem(ctx, problem)
+
+    @commands.command(brief="Force chọn bài tập")
+    @commands.check_any(commands.is_owner(), commands.has_any_role('Admin', 'Mod VNOI'))
+    async def force_pick(self, ctx, link, submission_link):
+        """
+            Tự chọn một bài tập để tag, không yêu cầu AC nhưng cần chèn link code AC
+            ;force_pick 1339B https://codeforces.com/contest/1339/submission/76478988
+            ;force_pick https://codeforces.com/problemset/problem/1339/B link_AC
+            ;force_pick https://codeforces.com/contest/1339/problem/B link_AC
+        """
+        handle = TaggingDb.TaggingDb.get_handle(ctx.author.id)
+        if handle is None:
+            await ctx.author.send(f"Không tìm được codeforces handle của {ctx.author.mention} <:sadness:662197924918329365>."
+                                  "Hãy dùng lệnh `identify` trước")
+            return
+        short_link = parser.link_parse(link)
+        if short_link is None:
+            await ctx.author.send(f"Format link đề không đúng, vui lòng dùng 1 trong 3 format sau:\n"
+                                  "1339B\n"
+                                  "https://codeforces.com/problemset/problem/1339/B\n"
+                                  "https://codeforces.com/contest/1339/problem/B\n")
+            return
+        problem = await codeforces_api.force_pick(handle, ctx.author.id, short_link, submission_link)
+
+        current_problem = codeforces_api.get_current_problem(ctx.author.id)
+        if current_problem is not None:
+            embed = problem_to_embed(current_problem, ctx.author.id, full_information=True)
+            is_tagged = TaggingDb.TaggingDb.is_tagged(current_problem['short_link'], ctx.author.id)
+            if is_tagged:
+                await self.thanks_channel.send(f"Đội ơn bạn {ctx.author.mention} <:orz:661153248186597386> đã làm xong bài:", embed=embed)
+                TaggingDb.TaggingDb.done(ctx.author.id, current_problem['short_link'])
+                submission_link = get_submission_link(current_problem)
                 TaggingDb.TaggingDb.add_submission(current_problem['short_link'], submission_link, ctx.author.id)
                 codeforces_api.set_current_problem(ctx.author.id, None)
             else:
@@ -294,7 +360,7 @@ class Tag(commands.Cog):
             return
         await self.thanks_channel.send(f"Đội ơn bạn {ctx.author.mention} <:orz:661153248186597386> đã làm xong bài:", embed=embed)
         TaggingDb.TaggingDb.done(ctx.author.id, current_problem['short_link'])
-        submission_link = SUBMISSION_BASE_URL.format(current_problem['short_link'].split('/')[0], current_problem['submission_id'])
+        submission_link = get_submission_link(current_problem)
         TaggingDb.TaggingDb.add_submission(current_problem['short_link'], submission_link, ctx.author.id)
         codeforces_api.set_current_problem(ctx.author.id, None)
         await self.get(ctx)
@@ -338,18 +404,18 @@ class Tag(commands.Cog):
         real_tag = await helper.tag.get_similar_tag(ctx, tag)
         if real_tag is None:
             return
-        await ctx.author.send('Tìm thấy tag `{}` giống với `{}`.'.format(real_tag, tag))
+        await ctx.send('Tìm thấy tag `{}` giống với `{}`.'.format(real_tag, tag))
 
         problems = TaggingDb.TaggingDb.get_tagged(real_tag)
         if len(problems) == 0:
-            await ctx.author.send('Chưa có bài nào thuộc tag `{}`'.format(real_tag))
+            await ctx.send('Chưa có bài nào thuộc tag `{}`'.format(real_tag))
             return
         msg = ""
         for p in problems:
             link = short_link_to_msg(p[0])
-            msg += f"[link]({link})\n"
+            msg += f"[{p[0]}]({link})\n"
         embed = discord.Embed(description=msg.strip())
-        await ctx.author.send('Các bài thuộc tag `{}`'.format(real_tag), embed=embed)
+        await ctx.send('Các bài thuộc tag `{}`'.format(real_tag), embed=embed)
 
 
 def setup(bot):

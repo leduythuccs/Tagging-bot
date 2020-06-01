@@ -21,6 +21,7 @@ print(bot.command_prefix)
 bot.load_extension("cogs.BotControl")
 bot.load_extension("cogs.Tag")
 bot.load_extension("cogs.Handle")
+bot.load_extension("cogs.Rank")
 def no_dm_check(ctx):
     if ctx.guild is None:
         raise commands.NoPrivateMessage('Private messages not permitted.')
@@ -48,9 +49,7 @@ async def on_ready():
 @bot.event
 async def on_command_error(ctx, error):
     print(error)
-    if (ctx.guild is None):
-        return True
-    if str(ctx.channel.id) != str(_LOG_CHANNEL_):
+    if ctx.guild is not None and str(ctx.channel.id) != str(_LOG_CHANNEL_):
         # raise Exception('!!!! This is not the #bot channel, bot will do nothing')
         return
     await ctx.send(embed=discord_common.embed_alert(error))

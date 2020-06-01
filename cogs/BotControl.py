@@ -98,7 +98,17 @@ class BotControl(commands.Cog):
         result = subprocess.run(
             ['git', 'pull', 'origin', 'dev'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
         await mess.edit(content='```\n' + result + '\n```')
-
-
+    
+    @commands.command(brief='Clear api cache')
+    @commands.check_any(commands.is_owner(), commands.has_any_role('Admin', 'Mod VNOI'))
+    async def clear_cache(self, ctx):
+        names = os.listdir('database/save')
+        count = 0
+        for name in names:
+            if name.find('info') != -1 or name.find('skip') != -1:
+                continue
+            os.remove('database/save/' + name)
+            count += 1
+        await ctx.send(f"Đã clear {count} cache file")
 def setup(bot):
     bot.add_cog(BotControl(bot))
