@@ -37,6 +37,9 @@ def problem_to_embed(problem, discord_id, full_information=False):
     if full_information:
         msg += f"Rating: ({problem['rating']})\n"
         msg += f"Tag gốc từ codeforces: {str(problem['tags'])}\n"
+        merged_tags = TaggingDb.TaggingDb.get_problem_merged_tag(problem['short_link'])
+        if len(merged_tags != 0):
+            msg += f"Tag đã merge: {str(merged_tags)}\n" 
     tags = TaggingDb.TaggingDb.get_problem_tag(problem['short_link'], discord_id)
     if len(tags) > 0:
         msg += "Các tag đã được add:\n"
@@ -331,6 +334,42 @@ class Tag(commands.Cog):
 
             TaggingDb.TaggingDb.remove_tag(problem_short_link, real_tag, ctx.author.id)
 
+            msg += '\n-`{}` (giống `{}`).'.format(real_tag, tag)
+        if len(msg) != 0:
+            await ctx.author.send('Các tag đã tìm thấy:', embed=discord_common.embed_success(msg))
+
+        embed = problem_to_embed(current_problem, ctx.author.id)
+        await ctx.author.send('Thông tin hiện tại của bài:', embed=embed)
+
+    @commands.command(brief="Xóa tag đã được merged")
+    async def delete_merged(self, ctx, *args):
+        """
+        Xóa tag đã được merge làm tag chính, param giống lệnh remove
+        Ví dụ ;delete_merged dp-tree bitset
+        """
+        current_problem = codeforces_api.get_current_problem(
+            ctx.author.id)
+        if current_problem is None:
+            await ctx.author.send(f"{ctx.author.mention} chưa được phân công bài nào <:sadness:662197924918329365>,"
+                                  "hãy dùng lệnh `;get` để được phân công bài.")
+            return
+        problem_short_link = current_problem['short_link']
+        # parse arg
+        params = parser.tag_parse(args, True)
+        if isinstance(params, str):
+            embed = discord_common.embed_alert(params)
+            await ctx.author.send(embed=embed)
+            return
+        tags, comment = params
+        msg = ""
+        for tag in tags:
+            tag = TaggingDb.normalize_tag(tag)
+            # get tag
+            real_tag = await helper.tag.get_similar_tag(ctx, tag)
+            if real_tag is None:
+                continue
+            
+            TaggingDb.TaggingDb.insert_delete_suggestion(ctx.author.id, problem_short_link, real_tag)
             msg += '\n-`{}` (giống `{}`).'.format(real_tag, tag)
         if len(msg) != 0:
             await ctx.author.send('Các tag đã tìm thấy:', embed=discord_common.embed_success(msg))

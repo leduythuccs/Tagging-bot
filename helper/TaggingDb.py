@@ -77,8 +77,17 @@ class TaggingDbConn:
             ')'
         )
         self.conn.execute(
-            'CREATE TABLE IF NOT EXISTS tagging ('
-            'problem            TEXT'
+            'CREATE TABLE IF NOT EXISTS merged_tag ('
+            'problem        TEXT,'
+            'tag            TEXT'
+            ')'
+        )
+        self.conn.execute(
+            'CREATE TABLE IF NOT EXISTS suggestion ('
+            'query_type     TEXT,'
+            'discord_id     TEXT,'
+            'problem        TEXT,'
+            'tag            TEXT'
             ')'
         )
 
@@ -112,12 +121,53 @@ class TaggingDbConn:
             )
         self.conn.execute(query, (handle, discord_id))
         self.conn.commit()
+    def merge_tag(self, discord_id, problem):
+        tags = self.get_problem_tag(problem, discord_id)
+        merged = self.get_problem_merged_tag(problem)
+        tags = list(filter(lambda x: x not in merged, tags))
+        if len(tags) == 0:
+            return
+        query = (
+            'INSERT INTO merged_tag (problem, tag) '
+            'VALUES (?, ?)'
+        )
+        self.conn.executemany(query, list(map(lambda x: (problem, x), tags)))
+        self.conn.commit()
+    def insert_suggestion(self, discord_id, problem):
+        tags = self.get_problem_tag(problem, discord_id)
+        merged = self.get_problem_merged_tag(problem)
+        tags = list(filter(lambda x: x not in merged, tags))
+        if len(tags) == 0:
+            return
+        query = (
+            'INSERT INTO suggestion (query_type, discord_id, problem, tag) '
+            'VALUES (?, ?, ?, ?)'
+        )
+        self.conn.executemany(query, list(map(lambda x: ('add', discord_id, problem, x), tags)))
+        self.conn.commit()
+    def insert_delete_suggestion(self, discord_id, problem, tag):
+        query = (
+            'INSERT INTO suggestion (query_type, discord_id, problem, tag) '
+            'VALUES (?, ?, ?, ?) '
+        )
+        self.conn.execute(query, ('del', discord_id, problem, tag))
+        self.conn.commit()
     def done(self, discord_id, problem):
         query = (
             'INSERT INTO user_tag_rank (discord_id, problem) '
             'VALUES (?, ?)'
         )
         self.conn.execute(query, (discord_id, problem))
+        query = (
+            'SELECT COUNT(*) '
+            'FROM user_tag_rank '
+            'WHERE problem = ?'
+        )
+        cnt = self.conn.execute(query, (problem, )).fetchone()[0]
+        if cnt <= 2:
+            self.merge_tag(discord_id, problem)
+        else:
+            self.insert_suggestion(discord_id, problem)
         self.conn.commit()
     def get_handle(self, discord_id):
         query = (
@@ -158,6 +208,14 @@ class TaggingDbConn:
             'WHERE problem = ? AND discord_id = ?'
         )
         res = self.conn.execute(query, (problem, discord_id)).fetchall()
+        return list(map(lambda x: x[0], res))
+    def get_problem_merged_tag(self, problem):
+        query = (
+            'SELECT tag '
+            'FROM merged_tag '
+            'WHERE problem = ?'
+        )
+        res = self.conn.execute(query, (problem, )).fetchall()
         return list(map(lambda x: x[0], res))
     def get_problem_comment(self, problem, discord_id):
         query = (
