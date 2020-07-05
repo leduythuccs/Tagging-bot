@@ -38,7 +38,7 @@ def problem_to_embed(problem, discord_id, full_information=False):
         msg += f"Rating: ({problem['rating']})\n"
         msg += f"Tag gốc từ codeforces: {str(problem['tags'])}\n"
         merged_tags = TaggingDb.TaggingDb.get_problem_merged_tag(problem['short_link'])
-        if len(merged_tags != 0):
+        if len(merged_tags) != 0:
             msg += f"Tag đã merge: {str(merged_tags)}\n" 
     tags = TaggingDb.TaggingDb.get_problem_tag(problem['short_link'], discord_id)
     if len(tags) > 0:
